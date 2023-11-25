@@ -1,5 +1,7 @@
+#include "../headers/jsh.h"
 #include <stdlib.h>
 
 int main(int argc, char **argv) {
-    return EXIT_SUCCESS;
+    int r = start();
+    return r;
 }

@@ -6,6 +6,7 @@ before_script:
   - apt-get install -y clang
   - apt-get install -y clang-format
   - apt-get install -y make
+  - apt-get install libreadline-dev
 
 build:
   stage: build

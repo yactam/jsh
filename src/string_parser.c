@@ -36,9 +36,9 @@ char **parse_line(char *line, char sep) {
     debug("the number of words in the line is %ld", nb_words);
     char **res = malloc((nb_words + 1) * sizeof(char *));
     size_t index = 0;
+    char *word = NULL;
     check_mem(res);
     size_t cursor = 0;
-    char *word = NULL;
     size_t line_len = strlen(line);
     debug("the length of the line is %ld", line_len);
     while (line[cursor] == sep) {
