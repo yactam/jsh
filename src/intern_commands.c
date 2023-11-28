@@ -12,7 +12,5 @@ void jsh_exit() {
 }
 
 void jsh_exit_val(int val) {
-    fflush(stdout);
-    fflush(stderr);
     exit(val);
 }

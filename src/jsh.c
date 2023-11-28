@@ -17,27 +17,32 @@ char *getPrompt() {
     check(getcwd(cwd, PATH_MAXSIZE) != NULL,
           "can't get current working directory!");
 
-    size_t prompt_size = PROMPT_MAXSIZE + strlen(YELLOW) + strlen(DEFAULT) + 1;
+    size_t prompt_size =
+        PROMPT_MAXSIZE + strlen(BLUE) + strlen(YELLOW) + strlen(DEFAULT) + 1;
     char *prompt = malloc(prompt_size * sizeof(char));
     check_mem(prompt);
 
     int cwd_len = strlen(cwd);
-    strcpy(prompt, YELLOW);
-    if (cwd_len < 30) {
+    debug("cwd_len = %d", cwd_len);
+    int nb_jobs = 0;
+    char jobs[JOBS_MAXSIZE + 3];
+    snprintf(jobs, JOBS_MAXSIZE + 2, "[%d]", nb_jobs);
+    strcpy(prompt, BLUE);
+    strcat(prompt, jobs);
+    strcat(prompt, YELLOW);
+    size_t size_left_to_ref = PROMPT_MAXSIZE - strlen(jobs) - 2;
+    debug("size left to prompt = %ld", size_left_to_ref);
+    if (cwd_len <= size_left_to_ref) {
         strcat(prompt, cwd);
     } else {
         strcat(prompt, "...");
-        strcat(prompt, &(cwd[cwd_len - 27]));
+        strcat(prompt, &(cwd[cwd_len - size_left_to_ref + 3]));
     }
-    strcat(prompt, "$ ");
     strcat(prompt, DEFAULT);
+    strcat(prompt, "$ ");
     return prompt;
 error:
     return NULL;
-}
-
-void clearScreen() {
-    printf(CLEAR_SCREEN);
 }
 
 int run_command(char **input) {
@@ -90,11 +95,11 @@ error:
 }
 
 int start() {
-    clearScreen();
     debug("call to start the jsh");
     while (1) {
         char *prompt = getPrompt();
         debug("current prompt: %s", prompt);
+        rl_outstream = stderr;
         char *line = readline(prompt);
         if (line == NULL) {
             jsh_exit_val(getReturn());

@@ -6,8 +6,8 @@
 #define CYAN "\001\033[36m\002"
 #define RED "\001\033[91m\002"
 #define DEFAULT "\001\033[0m\002"
-#define CLEAR_SCREEN "\033[2J\033[H"
-#define PROMPT_MAXSIZE 32
+#define PROMPT_MAXSIZE 30
+#define JOBS_MAXSIZE 10
 
 #include <stdlib.h>
 #include "global_variables.h"
