@@ -45,12 +45,21 @@ error:
     return NULL;
 }
 
+int pwd() {
+    char cwd[PATH_MAXSIZE + 1];
+    getcwd(cwd, PATH_MAXSIZE);
+    strcat(cwd, "\n");
+    size_t cwd_len = strlen(cwd);
+    if (write(STDOUT_FILENO, cwd, cwd_len + 1) == -1)
+        return -1;
+    return 0;
+}
+
 int run_command(char **input) {
     char *cmd = input[0];
     debug("call to run command '%s'", cmd);
     if (strcmp(cmd, "pwd") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
+        check(pwd() != -1, "Erreur d'écriture sur la sortie standard");
     } else if (strcmp(cmd, "cd") == 0) {
         check(write(STDOUT_FILENO, "nope\n", 5) != -1,
               "Erreur d'écriture sur la sortie standard");
