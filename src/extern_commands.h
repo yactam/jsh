@@ -3,6 +3,6 @@
 
 #include <stdlib.h>
 
-int exec(char*, char**);
+int exec(char *, char **);
 
 #endif

@@ -1,6 +1,6 @@
-#include "../headers/intern_commands.h"
-#include "../headers/debug.h"
-#include "../headers/global_variables.h"
+#include "intern_commands.h"
+#include "debug.h"
+#include "global_variables.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
