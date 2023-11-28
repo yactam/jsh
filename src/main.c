@@ -1,4 +1,4 @@
-#include "../headers/jsh.h"
+#include "jsh.h"
 #include <stdlib.h>
 
 int main(int argc, char **argv) {

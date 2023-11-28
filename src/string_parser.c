@@ -1,5 +1,5 @@
-#include "../headers/string_parser.h"
-#include "../headers/debug.h"
+#include "string_parser.h"
+#include "debug.h"
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +24,7 @@ size_t nbWords(char *line, char sep) {
             if (line[space - line + start] == '\0')
                 return res;
         }
+
         start = space - line + start;
         res++;
     }
@@ -34,16 +35,20 @@ char **parse_line(char *line, char sep) {
     debug("start parse line '%s' using separator '%c'", line, sep);
     size_t nb_words = nbWords(line, sep);
     debug("the number of words in the line is %ld", nb_words);
+
     char **res = malloc((nb_words + 1) * sizeof(char *));
     size_t index = 0;
     char *word = NULL;
     check_mem(res);
     size_t cursor = 0;
     size_t line_len = strlen(line);
+
     debug("the length of the line is %ld", line_len);
+
     while (line[cursor] == sep) {
         cursor++;
     }
+
     while (cursor < line_len) {
         char *space = strchr(line + cursor, sep);
         debug("first occurence of separator = '%s'", space);
@@ -74,14 +79,18 @@ char **parse_line(char *line, char sep) {
             free(word);
             debug("the length of the word whithout '%c' is %ld", sep, word_len);
             cursor = space - line;
+
             while (line[cursor] != '\0' && line[cursor] == sep) {
                 cursor++;
                 debug("cursor = %ld", cursor);
             }
+
             debug("cursor = %ld", cursor);
         }
     }
+
     res[index] = NULL;
+
     return res;
 error:
     if (word)

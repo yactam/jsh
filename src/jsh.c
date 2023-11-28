@@ -1,8 +1,8 @@
-#include "../headers/jsh.h"
-#include "../headers/debug.h"
-#include "../headers/extern_commands.h"
-#include "../headers/intern_commands.h"
-#include "../headers/string_parser.h"
+#include "jsh.h"
+#include "debug.h"
+#include "extern_commands.h"
+#include "intern_commands.h"
+#include "string_parser.h"
 #include <readline/history.h>
 #include <readline/readline.h>
 #include <stdio.h>

@@ -1,6 +1,6 @@
-#include "../headers/extern_commands.h"
-#include "../headers/debug.h"
-#include "../headers/global_variables.h"
+#include "extern_commands.h"
+#include "debug.h"
+#include "global_variables.h"
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>

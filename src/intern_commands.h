@@ -5,7 +5,7 @@
 #include <sys/types.h>
 
 int pwd();
-int cd_path(char*);
+int cd_path(char *);
 int cd();
 int cd_();
 void jsh_exit();

@@ -1,4 +1,4 @@
-#include "../headers/global_variables.h"
+#include "global_variables.h"
 #include <stdio.h>
 #include <string.h>
 
