@@ -1,20 +1,17 @@
-BIN_NAME = jsh
-BIN_DIRECTORY = bin
-BIN_PATH = $(BIN_DIRECTORY)/$(BIN_NAME)
+EXEC_NAME = jsh
 
 CC = clang
 CC_FLAGS = -Wall -DNDEBUG $(OPTFLAGS)
 LDFLAGS = -lreadline -lhistory
 
-all: build run
+all: build
 
 format:
 	clang-format -style=file -i $$(find ./src -name '*.c' -or -name '*.h')
 
 build:
-	mkdir -p $(BIN_DIRECTORY)
 	clang-format -style=file --dry-run --Werror $$(find ./src -name '*.c' -or -name '*.h')
-	$(CC) $(CC_FLAGS) $(INCLUDES) src/*.c -o $(BIN_PATH) $(LDFLAGS)
+	$(CC) $(CC_FLAGS) $(INCLUDES) src/*.c -o $(EXEC_NAME) $(LDFLAGS)
 
 run:
-	$(BIN_PATH)
+	./$(EXEC_NAME)

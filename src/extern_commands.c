@@ -27,5 +27,6 @@ int exec(char *cmd, char **args) {
         }
     }
 error:
+    exit(EXIT_FAILURE);
     return -1;
 }
