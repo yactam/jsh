@@ -52,8 +52,14 @@ int run_command(char **input) {
         check(write(STDOUT_FILENO, "nope\n", 5) != -1,
               "Erreur d'écriture sur la sortie standard");
     } else if (strcmp(cmd, "cd") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
+        char *arg = input[1];
+
+        if (arg != NULL && input[2] != NULL) {
+            log_error("cd: Too many arguments");
+            goto error;
+        }
+
+        return cd(arg);
     } else if (strcmp(cmd, "?") == 0) {
         char buf[4069];
         int n = snprintf(buf, sizeof(buf) - 2, "%d\n", getReturn());

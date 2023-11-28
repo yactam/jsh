@@ -5,9 +5,7 @@
 #include <sys/types.h>
 
 int pwd();
-int cd_path(char *);
-int cd();
-int cd_();
+int cd(const char *);
 void jsh_exit();
 void jsh_exit_val(int);
 int jobs();

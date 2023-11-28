@@ -14,3 +14,24 @@ void jsh_exit() {
 void jsh_exit_val(int val) {
     exit(val);
 }
+
+int cd(const char *arg) {
+    char path[PATH_MAXSIZE];
+    memset(path, '\0', sizeof(path));
+
+    if (arg == NULL) {
+        strcpy(path, getenv("HOME"));
+    } else if (strcmp(arg, "-") == 0) {
+        strcpy(path, getenv("OLDPWD"));
+    } else {
+        strcpy(path, arg);
+    }
+
+    int error_code = chdir(path);
+    if (error_code != 0) {
+        log_error("Failed to change directory with arg=%s (param=%s)", arg,
+                  path);
+    }
+
+    return error_code;
+}
