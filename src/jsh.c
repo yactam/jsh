@@ -45,30 +45,13 @@ error:
     return NULL;
 }
 
-int pwd() {
-    char cwd[PATH_MAXSIZE + 1];
-    getcwd(cwd, PATH_MAXSIZE);
-    strcat(cwd, "\n");
-    size_t cwd_len = strlen(cwd);
-    if (write(STDOUT_FILENO, cwd, cwd_len + 1) == -1)
-        return -1;
-    return 0;
-}
-
 int run_command(char **input) {
     char *cmd = input[0];
     debug("call to run command '%s'", cmd);
     if (strcmp(cmd, "pwd") == 0) {
         check(pwd() != -1, "Erreur d'écriture sur la sortie standard");
     } else if (strcmp(cmd, "cd") == 0) {
-        char *arg = input[1];
-
-        if (arg != NULL && input[2] != NULL) {
-            log_error("cd: Too many arguments");
-            goto error;
-        }
-
-        return cd(arg);
+        return cd(input);
     } else if (strcmp(cmd, "?") == 0) {
         char buf[4069];
         int n = snprintf(buf, sizeof(buf) - 2, "%d\n", getReturn());
@@ -125,9 +108,11 @@ int start() {
             char **input = parse_line(line, ' ');
             free(line);
             int ret = run_command(input);
+            debug("the last command returned: %d", ret);
             setReturn(ret);
             free_parse_table(input);
         }
+        free(prompt);
     }
     return 0;
 }

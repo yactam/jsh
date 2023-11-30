@@ -7,25 +7,22 @@
 size_t nbWords(char *line, char sep) {
     debug("call to get the number of words");
     size_t res = 0;
-    size_t start = 0;
-    while (line[start] == sep) {
-        start++;
+    char *cursor = line;
+    while (*cursor == sep) {
+        cursor++;
     }
-    while (line[start] != '\0') {
-        char *space = strchr(line + start, sep);
+    while (*cursor != '\0') {
+        char *space = strchr(cursor, sep);
         if (space == NULL) {
             return ++res;
         }
-
         debug("first occurrence of separator = '%s'\n", space);
-
-        while (line[space - line + start] == sep) {
-            start++;
-            if (line[space - line + start] == '\0')
+        cursor = space;
+        while (*cursor == sep) {
+            cursor++;
+            if (*cursor == '\0')
                 return res;
         }
-
-        start = space - line + start;
         res++;
     }
     return res;
@@ -89,7 +86,7 @@ char **parse_line(char *line, char sep) {
         }
     }
 
-    res[index] = NULL;
+    res[nb_words] = NULL;
 
     return res;
 error:

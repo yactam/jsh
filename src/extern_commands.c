@@ -16,7 +16,10 @@ int exec(char *cmd, char **args) {
         check(dup2(STDIN_FILENO, STDIN_FILENO) != -1, "Erreur dup2 stdin");
         check(dup2(STDOUT_FILENO, STDOUT_FILENO) != -1, "Erreur dup2 stdout");
         check(dup2(STDERR_FILENO, STDERR_FILENO) != -1, "Erreur dup2 stderr");
-        check(execvp(cmd, args) != -1, "Erreur execvp");
+        if (execvp(cmd, args) == -1) {
+            perror("jsh");
+            exit(EXIT_FAILURE);
+        }
         return -1;
     } else {
         int wstatus = 0;
