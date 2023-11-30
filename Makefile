@@ -9,8 +9,10 @@ all: build
 format:
 	clang-format -style=file -i $$(find ./src -name '*.c' -or -name '*.h')
 
-build:
+test-format:
 	clang-format -style=file --dry-run --Werror $$(find ./src -name '*.c' -or -name '*.h')
+
+build:
 	$(CC) $(CC_FLAGS) $(INCLUDES) src/*.c -o $(EXEC_NAME) $(LDFLAGS)
 
 run:
