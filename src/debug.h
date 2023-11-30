@@ -14,12 +14,20 @@
 
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
 
+#ifndef NDEBUG
 #define log_error(M, ...)                                                      \
     fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__,  \
             clean_errno(), ##__VA_ARGS__)
+#else
+#define log_error(M, ...)
+#endif
 
+#ifndef NDEBUG
 #define log_info(M, ...)                                                       \
     fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#else
+#define log_info(M, ...)
+#endif
 
 #define check(A, M, ...)                                                       \
     if (!(A)) {                                                                \
