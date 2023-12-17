@@ -94,10 +94,11 @@ error:
 
 int start() {
     debug("call to start the jsh");
+    setenv("OLDPWD", "", 1);
+    rl_outstream = stderr;
     while (1) {
         char *prompt = getPrompt();
         debug("current prompt: %s", prompt);
-        rl_outstream = stderr;
         char *line = readline(prompt);
         if (line == NULL) {
             jsh_exit_val(getReturn());
