@@ -13,14 +13,13 @@ int exec(char *cmd, char **args) {
     if (pid == -1) {
         log_error("Erreur fork");
     } else if (pid == 0) {
-        check(dup2(STDIN_FILENO, STDIN_FILENO) != -1, "Erreur dup2 stdin");
-        check(dup2(STDOUT_FILENO, STDOUT_FILENO) != -1, "Erreur dup2 stdout");
-        check(dup2(STDERR_FILENO, STDERR_FILENO) != -1, "Erreur dup2 stderr");
-        if (execvp(cmd, args) == -1) {
-            perror("jsh");
-            exit(EXIT_FAILURE);
-        }
-        return -1;
+        execvp(cmd, args);
+        char error[ERROR_MAXSIZE];
+        snprintf(error, ERROR_MAXSIZE - 2, "bash: %s: commande inconnue\n",
+                 cmd);
+        check(write(STDERR_FILENO, error, strlen(error)) != -1,
+              "Erreur dans l'écriture sur la sortie d'erreur standard.");
+        exit(EXIT_FAILURE);
     } else {
         int wstatus = 0;
         waitpid(pid, &wstatus, 0);
@@ -29,7 +28,7 @@ int exec(char *cmd, char **args) {
             return exit_status;
         }
     }
+    return EXIT_FAILURE;
 error:
-    exit(EXIT_FAILURE);
-    return -1;
+    return EXIT_FAILURE;
 }

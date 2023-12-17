@@ -31,8 +31,8 @@ int cd(char **args) {
     if (args[1] == NULL) {
         strcpy(path, getenv("HOME"));
     } else if (strcmp(args[1], "-") == 0 && args[2] == NULL) {
-        char *oldwd = getOldwd();
-        if (oldwd == NULL) {
+        char *oldwd = getenv("OLDPWD");
+        if (strcmp(oldwd, "") == 0) {
             char err[ERROR_MAXSIZE + 2];
             int err_len =
                 snprintf(err, ERROR_MAXSIZE,
@@ -66,7 +66,7 @@ int cd(char **args) {
               "Erreur dans l'écriture sur la sortie d'erreur standard");
         return 1;
     }
-    setOldwd(pwd);
+    setenv("OLDPWD", pwd, 1);
     return 0;
 error:
     return 1;

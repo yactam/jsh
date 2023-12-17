@@ -18,12 +18,12 @@ size_t nbWords(char *line, char sep) {
         }
         debug("first occurrence of separator = '%s'\n", space);
         cursor = space;
+        res++;
         while (*cursor == sep) {
             cursor++;
             if (*cursor == '\0')
                 return res;
         }
-        res++;
     }
     return res;
 }
@@ -97,6 +97,13 @@ error:
     if (res)
         free(res);
     return NULL;
+}
+
+size_t size_parse_table(char **words) {
+    size_t res = 0;
+    while (words[res] != NULL)
+        ++res;
+    return res;
 }
 
 void free_parse_table(char **words) {
