@@ -151,7 +151,6 @@ int start() {
     debug("call to start the jsh");
     setenv("OLDPWD", "", 1);
     rl_outstream = stderr;
-    string_array sa;
     while (1) {
         char *prompt = getPrompt();
         debug("current prompt: %s", prompt);
@@ -160,29 +159,14 @@ int start() {
             jsh_exit_val(getReturn());
         }
         debug("line read: %s", line);
-        int ret;
         if (strcmp(line, "") != 0) {
             add_history(line);
             char **input = parse_line(line, ' ');
-            int len_input = nombreElements(input);
-            initialize_string_array(&sa);
-            for (int i = 0; i < len_input; i++) {
-                add_string(&sa, input[i]);
-            }
-            const char *maybe_red = get_string(&sa, sa.length - 2);
-            printf("%i\n", strcmp(maybe_red, ">"));
-            printf("%s\n", maybe_red);
-            if (is_a_redirection(maybe_red)) {
-                printf("ici ?\n");
-                ret = run_red(sa);
-            } else {
-                ret = run_command(input);
-            }
+            int ret = run_command(input);
             free(line);
             debug("the last command returned: %d", ret);
             setReturn(ret);
             free_parse_table(input);
-            free_string_array(&sa);
         }
         free(prompt);
     }
