@@ -112,3 +112,47 @@ void free_parse_table(char **words) {
     }
     free(words);
 }
+
+int nombreElements(char **tableau) {
+    int nombre = 0;
+
+    while (tableau[nombre] != NULL) {
+        nombre++;
+    }
+
+    return nombre;
+}
+
+void enleverDeuxDerniersElements(char ***tableau, int *taille) {
+    if (*taille >= 2) {
+        free((*tableau)[*taille - 1]);
+        free((*tableau)[*taille - 2]);
+
+        *taille -= 2;
+
+        *tableau = realloc(*tableau, (*taille) * sizeof(char *));
+
+        if (*tableau == NULL) {
+            fprintf(stderr, "Erreur lors de la réallocation de mémoire.\n");
+            exit(EXIT_FAILURE);
+        }
+    } else {
+        fprintf(stderr,
+                "Le tableau n'a pas assez d'éléments pour en enlever deux.\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+int is_a_redirection(const char *red) {
+    if (red == NULL) {
+        printf("NOPE");
+        return 0;
+    }
+    if (strcmp(red, ">") == 0 || strcmp(red, "<") == 0 ||
+        strcmp(red, "2>") == 0 || strcmp(red, ">>") == 0 ||
+        strcmp(red, "2>>") == 0 || strcmp(red, ">|") == 0 ||
+        strcmp(red, "2>|") == 0) {
+        return 1;
+    }
+    return 0;
+}
