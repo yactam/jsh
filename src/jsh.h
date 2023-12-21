@@ -14,5 +14,6 @@
 #include <stdlib.h>
 
 int start();
+int run_command(char **);
 
 #endif

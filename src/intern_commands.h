@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+int run_intern_command(char **);
 int pwd();
 int cd(char **);
 void jsh_exit();
