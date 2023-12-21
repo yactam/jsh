@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 JobList *jobs_supervisor;
 
@@ -13,14 +14,23 @@ void init_jobs_supervisor() {
 	jobs_supervisor->nb_jobs = 0;
 }
 
-job_node *add_job(char *cmd) {
-	debug("call to add a new job to the jobs list with cmd %s", cmd);
+job_node *add_job(char **args) {
+	debug("call to add a new job");
 	job_node *job = (job_node *) malloc(sizeof(job_node));
 	check_mem(job);
 
 	job->next = NULL;
 	job->pgid = 0;
-	strcpy(job->command, cmd);
+	
+	size_t i = 0, j = 0;
+	while(args[i] != NULL && j < COMMAND_MAXSIZE) {
+		for(size_t k = 0; k < strlen(args[i]); k++) {
+			job->command[j++] = args[i][k];
+		}
+		if(args[i+1] != NULL) job->command[j++] = ' ';
+		i++;
+	}
+
 	job->status = RUNNING;
 	job->mode = BACKGROUND;
 
@@ -123,4 +133,38 @@ void display_job(job_node *job, int fd) {
 
     dprintf(fd, "[%d] %d %s %s\n", job->job_id, (int)job->pgid, status_str,
             job->command);
+}
+
+void check_jobs() {
+	int wstatus;
+	pid_t pid;
+
+	while((pid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
+		debug("A job with pid %d has changed his stats", pid);
+		job_node *job = jobs_supervisor->head;
+
+		while(job != NULL) {
+			job_node *next = job->next;
+
+			debug("test job %d with pgid %d", job->job_id, job->pgid);
+			if(job->pgid == pid) {
+				debug("test succeded with job %d", job->job_id);
+				if(WIFEXITED(wstatus)) {
+					job->status = DONE;
+				} else if(WIFSIGNALED(wstatus)) {
+					job->status = KILLED;
+				} else if(WIFSTOPPED(wstatus)) {
+					job->status = STOPPED;
+				} else if(WIFCONTINUED(wstatus)) {
+					job->status = RUNNING;
+				}
+				display_job(job, STDERR_FILENO);
+			}
+			if(job->status == DONE || job->status == KILLED) {
+				remove_job(job->job_id);
+			}
+
+			job = next;
+		}
+	}
 }

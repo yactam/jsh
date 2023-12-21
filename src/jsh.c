@@ -27,7 +27,7 @@ char *getPrompt() {
 
     int cwd_len = strlen(cwd);
     debug("cwd_len = %d", cwd_len);
-    int nb_jobs = 0;
+    int nb_jobs = jobs_supervisor->nb_jobs;
     char jobs[JOBS_MAXSIZE + 3];
     snprintf(jobs, JOBS_MAXSIZE + 2, "[%d]", nb_jobs);
     strcpy(prompt, BLUE);
@@ -82,13 +82,13 @@ int run_command(char **input) {
     return ret;
 }
 
-
 int start() {
     debug("call to start the jsh");
     setenv("OLDPWD", "", 1);
     rl_outstream = stderr;
 	init_jobs_supervisor();
     while (1) {
+		check_jobs();
         char *prompt = getPrompt();
         debug("current prompt: %s", prompt);
         char *line = readline(prompt);
@@ -109,5 +109,6 @@ int start() {
             free_parse_table(input);
         }
     }
+	free_jobs_supervisor();
     return 0;
 }

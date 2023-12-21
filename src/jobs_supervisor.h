@@ -36,11 +36,11 @@ typedef struct {
 extern JobList *jobs_supervisor;
 
 void init_jobs_supervisor();
-job_node *add_job(char *cmd);
+job_node *add_job(char **args);
 void remove_job(unsigned int job_id);
 job_node *get_job(unsigned int job_id);
 void free_jobs_supervisor();
-
+void check_jobs();
 void display_job(job_node *, int fd);
 
 #endif
