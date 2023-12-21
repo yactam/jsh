@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 
+int run_extern_command(char **);
 int exec(char *, char **);
 
 #endif

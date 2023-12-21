@@ -1,11 +1,69 @@
 #include "intern_commands.h"
 #include "debug.h"
 #include "global_variables.h"
+#include "parser.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+int run_intern_command(char **input) {
+    char *cmd = input[0];
+    debug("call to run command '%s'", cmd);
+
+    if (strcmp(cmd, "pwd") == 0) {
+        check(pwd() != EXIT_FAILURE, "Erreur d'écriture sur la sortie standard");
+        return EXIT_SUCCESS;
+
+    } else if (strcmp(cmd, "cd") == 0) {
+        return cd(input);
+
+    } else if (strcmp(cmd, "?") == 0) {
+        char buf[4069];
+        int n = snprintf(buf, sizeof(buf) - 2, "%d\n", getReturn());
+        check(write(STDOUT_FILENO, buf, n) != -1,
+              "Erreur d'écriture sur la sortie standard");
+        return EXIT_SUCCESS;
+
+    } else if (strcmp(cmd, "exit") == 0) {
+        if (input[1] == NULL) {
+            free_parse_table(input);
+            jsh_exit();
+        } else {
+            if (input[2] == NULL) {
+                int val = atoi(input[1]);
+                free_parse_table(input);
+                jsh_exit_val(val);
+            } else {
+                char *err = "jsh: exit: trop d'arguments\n";
+                check(write(STDERR_FILENO, err, strlen(err)),
+                      "Erreur d'écriture sur la sortie d'erreurs standard");
+            }
+        }
+
+    } else if (strcmp(cmd, "jobs") == 0) {
+        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
+              "Erreur d'écriture sur la sortie standard");
+
+    } else if (strcmp(cmd, "bg") == 0) {
+        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
+              "Erreur d'écriture sur la sortie standard");
+
+    } else if (strcmp(cmd, "fg") == 0) {
+        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
+              "Erreur d'écriture sur la sortie standard");
+
+    } else if (strcmp(cmd, "kill") == 0) {
+        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
+              "Erreur d'écriture sur la sortie standard");
+    } 
+
+    return EXIT_FAILURE;
+
+error:
+    return EXIT_FAILURE;
+}
 
 void jsh_exit() {
     jsh_exit_val(getReturn());
@@ -22,8 +80,8 @@ int pwd() {
     strcat(cwd, "\n");
     size_t cwd_len = strlen(cwd);
     if (write(STDOUT_FILENO, cwd, cwd_len) == -1)
-        return 1;
-    return 0;
+        return EXIT_FAILURE;
+    return EXIT_SUCCESS;
 }
 
 int cd(char **args) {

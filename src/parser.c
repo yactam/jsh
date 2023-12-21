@@ -1,4 +1,4 @@
-#include "string_parser.h"
+#include "parser.h"
 #include "debug.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -113,46 +113,28 @@ void free_parse_table(char **words) {
     free(words);
 }
 
-int nombreElements(char **tableau) {
-    int nombre = 0;
+command_type get_command_type(char **tokens) {
+	if(tokens == NULL || tokens[0] == NULL) return ERROR;
+    int i = 0;
+	while(tokens[i] != NULL) {
+		if(strcmp(tokens[i], "|") == 0) return PIPE;
+		if(strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 
+				|| strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 
+				|| strcmp(tokens[i], "2>") == 0	|| strcmp(tokens[i], "2>|") == 0 	
+				|| strcmp(tokens[i], "2>>") == 0) return IO_REDIRECTION; 
+		char *start = strstr(tokens[i], "<(");
+		char *end = strstr(tokens[i], ")");
+		if(start != NULL && end != NULL && start < end) return PROCESSUS_SUBSTITUTION; 
+        i++;
+	}
 
-    while (tableau[nombre] != NULL) {
-        nombre++;
-    }
+	char *cmd = tokens[0];
 
-    return nombre;
-}
+	if(strcmp(cmd, "pwd") == 0 || strcmp(cmd, "cd") == 0 || strcmp(cmd, "exit") == 0 
+			|| strcmp(cmd, "jobs") == 0 || strcmp(cmd, "bg") == 0 
+            || strcmp(cmd, "?") == 0 || strcmp(cmd, "fg") == 0 
+            || strcmp(cmd, "kill") == 0) 
+		return INTERN_COMMAND;
 
-void enleverDeuxDerniersElements(char ***tableau, int *taille) {
-    if (*taille >= 2) {
-        free((*tableau)[*taille - 1]);
-        free((*tableau)[*taille - 2]);
-
-        *taille -= 2;
-
-        *tableau = realloc(*tableau, (*taille) * sizeof(char *));
-
-        if (*tableau == NULL) {
-            fprintf(stderr, "Erreur lors de la réallocation de mémoire.\n");
-            exit(EXIT_FAILURE);
-        }
-    } else {
-        fprintf(stderr,
-                "Le tableau n'a pas assez d'éléments pour en enlever deux.\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-int is_a_redirection(const char *red) {
-    if (red == NULL) {
-        printf("NOPE");
-        return 0;
-    }
-    if (strcmp(red, ">") == 0 || strcmp(red, "<") == 0 ||
-        strcmp(red, "2>") == 0 || strcmp(red, ">>") == 0 ||
-        strcmp(red, "2>>") == 0 || strcmp(red, ">|") == 0 ||
-        strcmp(red, "2>|") == 0) {
-        return 1;
-    }
-    return 0;
+	return EXTERN_COMMAND;
 }

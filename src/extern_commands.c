@@ -8,6 +8,10 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+int run_extern_command(char **tokens) {
+    return exec(tokens[0], tokens);
+}
+
 int exec(char *cmd, char **args) {
     int pid = fork();
     if (pid == -1) {
