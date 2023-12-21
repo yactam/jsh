@@ -3,6 +3,7 @@
 #include "global_variables.h"
 #include "jobs_supervisor.h"
 #include "parser.h"
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -22,7 +23,7 @@ int run_intern_command(char **input) {
         return cd(input);
 
     } else if (strcmp(cmd, "?") == 0) {
-        int ret = getReturn();
+        int ret = get_return();
         dprintf(STDOUT_FILENO, "%d\n", ret);
         return EXIT_SUCCESS;
 
@@ -109,16 +110,18 @@ error:
 }
 
 void jsh_exit() {
-    jsh_exit_val(getReturn());
+    jsh_exit_val(get_return());
 }
 
 void jsh_exit_val(int val) {
     debug("call to exit with val %d", val);
+
     if (jobs_supervisor->nb_jobs > 0) {
         dprintf(STDERR_FILENO, "Il y a des tâches en cours\n");
-        setReturn(EXIT_FAILURE);
+        set_return(EXIT_FAILURE);
         return;
     }
+
     free_jobs_supervisor();
     exit(val);
 }
@@ -135,6 +138,7 @@ int pwd() {
 
 int cd(char **args) {
     char path[PATH_MAXSIZE + 1];
+
     if (args[1] == NULL) {
         strcpy(path, getenv("HOME"));
     } else if (strcmp(args[1], "-") == 0 && args[2] == NULL) {
@@ -162,32 +166,39 @@ int cd(char **args) {
                 args[1]);
         return EXIT_FAILURE;
     }
+
     setenv("OLDPWD", pwd, 1);
+
     return EXIT_SUCCESS;
 }
 
 int jobs() {
     int wstatus;
     pid_t pid;
+
     while ((pid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) >
            0) {
         update_job(pid, wstatus, STDOUT_FILENO);
     }
 
     job_node *job = jobs_supervisor->head;
+
     while (job != NULL) {
         display_job(job, STDOUT_FILENO);
         job = job->next;
     }
+
     return EXIT_SUCCESS;
 }
 
 int jobs_num(unsigned int job_id) {
     job_node *job = get_job(job_id);
+
     if (!job) {
         dprintf(STDERR_FILENO, "bash: jobs: %d : tâche inexistante\n", job_id);
         return EXIT_FAILURE;
     }
+
     int wstatus;
     pid_t ret = waitpid(job->pgid, &wstatus, WNOHANG | WUNTRACED | WCONTINUED);
     if (ret > 0) {
@@ -211,9 +222,11 @@ int kill_job_sig(int sig, unsigned int job_id) {
         log_info("job %d not found", job_id);
         return EXIT_FAILURE;
     }
+
     debug("send signal %d to group %d", sig, -job->pgid);
     if (kill(-job->pgid, sig) < 0)
         return EXIT_FAILURE;
+
     return EXIT_SUCCESS;
 }
 

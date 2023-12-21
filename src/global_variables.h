@@ -6,7 +6,7 @@
 
 extern int last_return;
 
-extern void setReturn(int);
-extern int getReturn();
+extern void set_return(int);
+extern int get_return();
 
 #endif

@@ -13,7 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 
-char *getPrompt() {
+char *get_prompt() {
     debug("call to get the prompt");
 
     char cwd[PATH_MAXSIZE + 1];
@@ -27,6 +27,7 @@ char *getPrompt() {
 
     int cwd_len = strlen(cwd);
     debug("cwd_len = %d", cwd_len);
+
     int nb_jobs = jobs_supervisor->nb_jobs;
     char jobs[JOBS_MAXSIZE + 3];
     snprintf(jobs, JOBS_MAXSIZE + 2, "[%d]", nb_jobs);
@@ -35,15 +36,19 @@ char *getPrompt() {
     strcat(prompt, YELLOW);
     size_t size_left_to_ref = PROMPT_MAXSIZE - strlen(jobs) - 2;
     debug("size left to prompt = %ld", size_left_to_ref);
+
     if (cwd_len <= size_left_to_ref) {
         strcat(prompt, cwd);
     } else {
         strcat(prompt, "...");
         strcat(prompt, &(cwd[cwd_len - size_left_to_ref + 3]));
     }
+
     strcat(prompt, DEFAULT);
     strcat(prompt, "$ ");
+
     return prompt;
+
 error:
     return NULL;
 }
@@ -53,7 +58,9 @@ int run_command(char **input) {
 
     command_type type = get_command_type(input);
     debug("command type is %d", type);
+
     int ret = 0;
+
     switch (type) {
     case ERROR:
         dprintf(STDERR_FILENO, "Error in command (NULL)\n");
@@ -69,7 +76,7 @@ int run_command(char **input) {
         break;
     case IO_REDIRECTION:
         debug("redirection command to execute");
-        ret = run_rediraction(input);
+        ret = run_redirection(input);
         break;
     case PIPE:
         ret = 0; // run_pipe(input);
@@ -87,27 +94,38 @@ int start() {
     setenv("OLDPWD", "", 1);
     rl_outstream = stderr;
     init_jobs_supervisor();
+
     while (1) {
         check_jobs();
-        char *prompt = getPrompt();
+
+        char *prompt = get_prompt();
         debug("current prompt: %s", prompt);
+
         char *line = readline(prompt);
+
         free(prompt);
+
         if (line == NULL) {
-            jsh_exit_val(getReturn());
+            jsh_exit_val(get_return());
         }
+
         debug("line read: %s", line);
+
         if (strcmp(line, "") != 0) {
             add_history(line);
             char **input = parse_line(line, ' ');
             debug("line parsed");
+
             int ret = run_command(input);
             debug("the last command returned: %d", ret);
-            setReturn(ret);
+            set_return(ret);
+
             free(line);
             free_parse_table(input);
         }
     }
+
     free_jobs_supervisor();
+
     return 0;
 }
