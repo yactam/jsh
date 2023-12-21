@@ -10,13 +10,13 @@ int cd(char **);
 void jsh_exit();
 void jsh_exit_val(int);
 int jobs();
-int jobs_num(unsigned);
-int job_t();
-int job_t_num(unsigned);
-int bg(unsigned);
-int fg(unsigned);
-int kill_job(unsigned);
-int kill_job_sig(int, unsigned);
+int jobs_num(unsigned);          // TODO
+int job_t();                     // TODO
+int job_t_num(unsigned);         // TODO
+int bg(unsigned);                // TODO
+int fg(unsigned);                // TODO
+int kill_job(unsigned);          // TODO
+int kill_job_sig(int, unsigned); // TODO
 int kill_process(pid_t);
 int kill_process_sig(int, pid_t);
 

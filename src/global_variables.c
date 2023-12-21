@@ -4,10 +4,10 @@
 
 int last_return = 0;
 
-void setReturn(int val) {
+void set_return(int val) {
     last_return = val;
 }
 
-int getReturn() {
+int get_return() {
     return last_return;
 }

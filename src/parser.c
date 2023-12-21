@@ -4,13 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-size_t nbWords(char *line, char sep) {
+size_t nb_words(char *line, char sep) {
     debug("call to get the number of words");
     size_t res = 0;
+
     char *cursor = line;
     while (*cursor == sep) {
         cursor++;
     }
+
     while (*cursor != '\0') {
         char *space = strchr(cursor, sep);
         if (space == NULL) {
@@ -25,15 +27,16 @@ size_t nbWords(char *line, char sep) {
                 return res;
         }
     }
+
     return res;
 }
 
 char **parse_line(char *line, char sep) {
     debug("start parse line '%s' using separator '%c'", line, sep);
-    size_t nb_words = nbWords(line, sep);
-    debug("the number of words in the line is %ld", nb_words);
+    size_t words_count = nb_words(line, sep);
+    debug("the number of words in the line is %ld", words_count);
 
-    char **res = malloc((nb_words + 1) * sizeof(char *));
+    char **res = malloc((words_count + 1) * sizeof(char *));
     size_t index = 0;
     char *word = NULL;
     check_mem(res);
@@ -47,8 +50,10 @@ char **parse_line(char *line, char sep) {
     }
 
     while (cursor < line_len) {
+
         char *space = strchr(line + cursor, sep);
         debug("first occurence of separator = '%s'", space);
+
         if (space == NULL) {
             debug("no separators left");
             size_t len = strlen(line + cursor);
@@ -86,8 +91,7 @@ char **parse_line(char *line, char sep) {
         }
     }
 
-    res[nb_words] = NULL;
-
+    res[words_count] = NULL;
     return res;
 error:
     if (word)
@@ -116,6 +120,7 @@ void free_parse_table(char **words) {
 command_type get_command_type(char **tokens) {
     if (tokens == NULL || tokens[0] == NULL)
         return ERROR;
+
     int i = 0;
     while (tokens[i] != NULL) {
         if (strcmp(tokens[i], "|") == 0)

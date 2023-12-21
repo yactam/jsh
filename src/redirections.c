@@ -74,7 +74,7 @@ int handel_redirection(char *redirection, char *fic) {
     return EXIT_SUCCESS;
 }
 
-int run_rediraction(char **tokens) {
+int run_redirection(char **tokens) {
 
     size_t i = 0;
 
@@ -136,5 +136,6 @@ int run_rediraction(char **tokens) {
     dup2(sin, STDIN_FILENO);
     dup2(sout, STDOUT_FILENO);
     dup2(serr, STDERR_FILENO);
+
     return res;
 }
