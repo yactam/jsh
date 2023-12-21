@@ -2,9 +2,9 @@
 #include "debug.h"
 #include "extern_commands.h"
 #include "intern_commands.h"
-#include "redirections.h"
-#include "parser.h"
 #include "jobs_supervisor.h"
+#include "parser.h"
+#include "redirections.h"
 #include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -50,33 +50,33 @@ error:
 
 int run_command(char **input) {
     debug("call to run command");
-   
+
     command_type type = get_command_type(input);
     debug("command type is %d", type);
-	int ret = 0;
-    switch(type) {
-        case ERROR:
-            dprintf(STDERR_FILENO, "Error in command (NULL)\n");
-			ret = EXIT_FAILURE;
-            break;
-		case INTERN_COMMAND:
-            debug("intern command to execute");
-			ret = run_intern_command(input);
-			break;
-		case EXTERN_COMMAND:
-            debug("extern command to execute");
-			ret = run_extern_command(input);
-			break;
-		case IO_REDIRECTION:
-            debug("redirection command to execute");
-			ret = run_rediraction(input);
-			break;
-		case PIPE:
-			ret = 0; // run_pipe(input);
-			break;
-		case PROCESSUS_SUBSTITUTION:
-			ret = 0; // run_process_substitution(input);
-			break;
+    int ret = 0;
+    switch (type) {
+    case ERROR:
+        dprintf(STDERR_FILENO, "Error in command (NULL)\n");
+        ret = EXIT_FAILURE;
+        break;
+    case INTERN_COMMAND:
+        debug("intern command to execute");
+        ret = run_intern_command(input);
+        break;
+    case EXTERN_COMMAND:
+        debug("extern command to execute");
+        ret = run_extern_command(input);
+        break;
+    case IO_REDIRECTION:
+        debug("redirection command to execute");
+        ret = run_rediraction(input);
+        break;
+    case PIPE:
+        ret = 0; // run_pipe(input);
+        break;
+    case PROCESSUS_SUBSTITUTION:
+        ret = 0; // run_process_substitution(input);
+        break;
     }
 
     return ret;
@@ -86,9 +86,9 @@ int start() {
     debug("call to start the jsh");
     setenv("OLDPWD", "", 1);
     rl_outstream = stderr;
-	init_jobs_supervisor();
+    init_jobs_supervisor();
     while (1) {
-		check_jobs();
+        check_jobs();
         char *prompt = getPrompt();
         debug("current prompt: %s", prompt);
         char *line = readline(prompt);
@@ -108,6 +108,6 @@ int start() {
             free_parse_table(input);
         }
     }
-	free_jobs_supervisor();
+    free_jobs_supervisor();
     return 0;
 }

@@ -1,16 +1,15 @@
+#include "debug.h"
 #include "jsh.h"
 #include "parser.h"
-#include "debug.h"
-#include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 
 int handel_redirection(char *redirection, char *fic) {
     if (strcmp(redirection, ">") == 0) {
         int write_fd;
-        write_fd =
-            open(fic, O_CREAT | O_WRONLY | O_EXCL, 0666);
-        if(write_fd < 0) {
+        write_fd = open(fic, O_CREAT | O_WRONLY | O_EXCL, 0666);
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -18,9 +17,8 @@ int handel_redirection(char *redirection, char *fic) {
         close(write_fd);
     } else if (strcmp(redirection, ">>") == 0) {
         int write_fd;
-        write_fd =
-            open(fic, O_CREAT | O_WRONLY | O_APPEND, 0666);
-        if(write_fd < 0) {
+        write_fd = open(fic, O_CREAT | O_WRONLY | O_APPEND, 0666);
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -29,7 +27,7 @@ int handel_redirection(char *redirection, char *fic) {
     } else if (strcmp(redirection, ">|") == 0) {
         int write_fd;
         write_fd = open(fic, O_CREAT | O_WRONLY | O_TRUNC, 0666);
-        if(write_fd < 0) {
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -37,9 +35,8 @@ int handel_redirection(char *redirection, char *fic) {
         close(write_fd);
     } else if (strcmp(redirection, "2>") == 0) {
         int write_fd;
-        write_fd =
-            open(fic, O_CREAT | O_WRONLY | O_EXCL, 0666);
-        if(write_fd < 0) {
+        write_fd = open(fic, O_CREAT | O_WRONLY | O_EXCL, 0666);
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -47,9 +44,8 @@ int handel_redirection(char *redirection, char *fic) {
         close(write_fd);
     } else if (strcmp(redirection, "2>>") == 0) {
         int write_fd;
-        write_fd =
-            open(fic, O_CREAT | O_WRONLY | O_APPEND, 0666);
-        if(write_fd < 0) {
+        write_fd = open(fic, O_CREAT | O_WRONLY | O_APPEND, 0666);
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -58,7 +54,7 @@ int handel_redirection(char *redirection, char *fic) {
     } else if (strcmp(redirection, "2>|") == 0) {
         int write_fd;
         write_fd = open(fic, O_CREAT | O_WRONLY | O_TRUNC, 0666);
-        if(write_fd < 0) {
+        if (write_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -67,7 +63,7 @@ int handel_redirection(char *redirection, char *fic) {
     } else if (strcmp(redirection, "<") == 0) {
         int input_fd;
         input_fd = open(fic, O_RDONLY);
-        if(input_fd < 0) {
+        if (input_fd < 0) {
             dprintf(STDERR_FILENO, "bash : %s : %s\n", fic, strerror(errno));
             return EXIT_FAILURE;
         }
@@ -82,11 +78,12 @@ int run_rediraction(char **tokens) {
 
     size_t i = 0;
 
-    while(tokens[i] != NULL) {
-        if(strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 
-				|| strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 
-				|| strcmp(tokens[i], "2>") == 0	|| strcmp(tokens[i], "2>|") == 0 	
-				|| strcmp(tokens[i], "2>>") == 0) break;
+    while (tokens[i] != NULL) {
+        if (strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 ||
+            strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 ||
+            strcmp(tokens[i], "2>") == 0 || strcmp(tokens[i], "2>|") == 0 ||
+            strcmp(tokens[i], "2>>") == 0)
+            break;
         i++;
     }
 
@@ -107,19 +104,18 @@ int run_rediraction(char **tokens) {
             return EXIT_FAILURE;
         }
     }
-    
-    args[i] = NULL;
 
+    args[i] = NULL;
 
     int sin = dup(STDIN_FILENO);
     int sout = dup(STDOUT_FILENO);
     int serr = dup(STDERR_FILENO);
 
     for (i = 0; tokens[i] != NULL; i++) {
-        if(strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 
-				|| strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 
-				|| strcmp(tokens[i], "2>") == 0	|| strcmp(tokens[i], "2>|") == 0 	
-				|| strcmp(tokens[i], "2>>") == 0) {
+        if (strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 ||
+            strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 ||
+            strcmp(tokens[i], "2>") == 0 || strcmp(tokens[i], "2>|") == 0 ||
+            strcmp(tokens[i], "2>>") == 0) {
 
             char *redirection = tokens[i];
             char *file = tokens[i + 1];
@@ -134,7 +130,6 @@ int run_rediraction(char **tokens) {
             i++;
         }
     }
-    
 
     int res = run_command(args);
     free_parse_table(args);

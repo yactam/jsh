@@ -3,12 +3,12 @@
 #include <stddef.h>
 
 typedef enum {
-	INTERN_COMMAND,
-	EXTERN_COMMAND,
-	IO_REDIRECTION,
-	PIPE,
-	PROCESSUS_SUBSTITUTION,
-	ERROR
+    INTERN_COMMAND,
+    EXTERN_COMMAND,
+    IO_REDIRECTION,
+    PIPE,
+    PROCESSUS_SUBSTITUTION,
+    ERROR
 } command_type;
 
 char **parse_line(char *, char);

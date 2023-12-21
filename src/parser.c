@@ -114,27 +114,31 @@ void free_parse_table(char **words) {
 }
 
 command_type get_command_type(char **tokens) {
-	if(tokens == NULL || tokens[0] == NULL) return ERROR;
+    if (tokens == NULL || tokens[0] == NULL)
+        return ERROR;
     int i = 0;
-	while(tokens[i] != NULL) {
-		if(strcmp(tokens[i], "|") == 0) return PIPE;
-		if(strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 
-				|| strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 
-				|| strcmp(tokens[i], "2>") == 0	|| strcmp(tokens[i], "2>|") == 0 	
-				|| strcmp(tokens[i], "2>>") == 0) return IO_REDIRECTION; 
-		char *start = strstr(tokens[i], "<(");
-		char *end = strstr(tokens[i], ")");
-		if(start != NULL && end != NULL && start < end) return PROCESSUS_SUBSTITUTION; 
+    while (tokens[i] != NULL) {
+        if (strcmp(tokens[i], "|") == 0)
+            return PIPE;
+        if (strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 ||
+            strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 ||
+            strcmp(tokens[i], "2>") == 0 || strcmp(tokens[i], "2>|") == 0 ||
+            strcmp(tokens[i], "2>>") == 0)
+            return IO_REDIRECTION;
+        char *start = strstr(tokens[i], "<(");
+        char *end = strstr(tokens[i], ")");
+        if (start != NULL && end != NULL && start < end)
+            return PROCESSUS_SUBSTITUTION;
         i++;
-	}
+    }
 
-	char *cmd = tokens[0];
+    char *cmd = tokens[0];
 
-	if(strcmp(cmd, "pwd") == 0 || strcmp(cmd, "cd") == 0 || strcmp(cmd, "exit") == 0 
-			|| strcmp(cmd, "jobs") == 0 || strcmp(cmd, "bg") == 0 
-            || strcmp(cmd, "?") == 0 || strcmp(cmd, "fg") == 0 
-            || strcmp(cmd, "kill") == 0) 
-		return INTERN_COMMAND;
+    if (strcmp(cmd, "pwd") == 0 || strcmp(cmd, "cd") == 0 ||
+        strcmp(cmd, "exit") == 0 || strcmp(cmd, "jobs") == 0 ||
+        strcmp(cmd, "bg") == 0 || strcmp(cmd, "?") == 0 ||
+        strcmp(cmd, "fg") == 0 || strcmp(cmd, "kill") == 0)
+        return INTERN_COMMAND;
 
-	return EXTERN_COMMAND;
+    return EXTERN_COMMAND;
 }
