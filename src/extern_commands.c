@@ -47,6 +47,8 @@ int exec(char *cmd, char **args, lunch_mode mode) {
 					return exit_status;
 				} else if(WIFSIGNALED(wstatus)) {
 					job->status = KILLED;
+				} else if(WIFSTOPPED(wstatus)) {
+					job->status = STOPPED;
 				} else if(WIFCONTINUED(wstatus)) {
 					job->status = RUNNING;
 				}

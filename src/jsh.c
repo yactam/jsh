@@ -94,7 +94,6 @@ int start() {
         char *line = readline(prompt);
         free(prompt);
         if (line == NULL) {
-            free_jobs_supervisor();
             jsh_exit_val(getReturn());
         }
         debug("line read: %s", line);

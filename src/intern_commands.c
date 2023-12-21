@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "global_variables.h"
 #include "parser.h"
+#include "jobs_supervisor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -27,7 +28,10 @@ int run_intern_command(char **input) {
         return EXIT_SUCCESS;
 
     } else if (strcmp(cmd, "exit") == 0) {
-        if (input[1] == NULL) {
+		 if (jobs_supervisor->nb_jobs > 0) {
+            dprintf(STDERR_FILENO, "Il y a des tâches en cours\n");
+            return EXIT_FAILURE;
+        } else if (input[1] == NULL) {
             free_parse_table(input);
             jsh_exit();
         } else {
@@ -35,17 +39,25 @@ int run_intern_command(char **input) {
                 int val = atoi(input[1]);
                 free_parse_table(input);
                 jsh_exit_val(val);
-            } else {
-                char *err = "jsh: exit: trop d'arguments\n";
-                check(write(STDERR_FILENO, err, strlen(err)),
-                      "Erreur d'écriture sur la sortie d'erreurs standard");
-            }
-        }
+            } else { 
+				dprintf(STDERR_FILENO, "bash: kill: trop d'arguments\n");
+				return EXIT_FAILURE;
+			} 
+		}
 
     } else if (strcmp(cmd, "jobs") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
-
+		 if (input[1] == NULL) {
+            return jobs();
+        } else {
+            if (input[2] == NULL) {
+                char *arg = input[1] + 1; // on élimine le %
+                int job_num = atoi(arg);
+                jobs_num(job_num);
+            } else {
+                dprintf(STDERR_FILENO, "bash: kill: trop d'arguments\n");
+				return EXIT_FAILURE;
+            }
+        }
     } else if (strcmp(cmd, "bg") == 0) {
         check(write(STDOUT_FILENO, "nope\n", 5) != -1,
               "Erreur d'écriture sur la sortie standard");
@@ -55,8 +67,39 @@ int run_intern_command(char **input) {
               "Erreur d'écriture sur la sortie standard");
 
     } else if (strcmp(cmd, "kill") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
+		 if (input[2] == NULL) {
+                if (input[1][0] == '%') {     // c'est un job
+                    char *arg = input[1] + 1; // on élimine le %
+                    int job_num = atoi(arg);
+                    return kill_job(job_num);
+                } else {
+                    pid_t pid = atoi(input[1]);
+                    if (pid == 0) {
+                        dprintf(STDERR_FILENO,
+                                "kill : utilisation :kill [-signal] %%job ou"
+                                "kill [-signal] pid\n");
+                        return EXIT_FAILURE;
+                    } else {
+                        return kill_process(pid);
+                    }
+                }
+            } else if (input[3] == NULL) {
+                if (input[2][0] == '%') {     // c'est un job
+                    char *arg = input[1] + 1; // on élimine le -
+                    int sig = atoi(arg);
+                    arg = input[2] + 1; // on élimine le %
+                    int job_num = atoi(arg);
+                    return kill_job_sig(sig, job_num);
+                } else {
+                    pid_t pid = atoi(input[2]);
+                    char *arg = input[1] + 1; // on élimine le -
+                    int sig = atoi(arg);
+                    return kill_process_sig(sig, pid);
+                }
+            } else {
+                dprintf(STDERR_FILENO, "bash: kill: trop d'arguments\n");
+				return EXIT_FAILURE;
+            }
     } 
 
     return EXIT_FAILURE;
@@ -71,6 +114,7 @@ void jsh_exit() {
 
 void jsh_exit_val(int val) {
     debug("call to exit with val %d", val);
+	free_jobs_supervisor();
     exit(val);
 }
 
@@ -128,4 +172,90 @@ int cd(char **args) {
     return 0;
 error:
     return 1;
+}
+
+int jobs() {
+    int wstatus;
+    pid_t pid;
+    while ((pid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
+        job_node *job = jobs_supervisor->head;
+        while (job != NULL) {
+            job_node *next = job->next;
+            if (job->pgid == pid) {
+                if (WIFEXITED(wstatus)) {
+                    job->status = DONE;
+                } else if(WIFSTOPPED(wstatus)) {
+					job->status = STOPPED;
+				} else if(WIFSIGNALED(wstatus)) {
+					job->status = KILLED;
+				} else if(WIFCONTINUED(wstatus)) {
+					job->status = RUNNING;
+				}
+            }
+            if (job->status == DONE) {
+                display_job(job, STDOUT_FILENO);
+                remove_job(job->job_id);
+            }
+            job = next;
+        }
+    }
+
+    job_node *job = jobs_supervisor->head;
+    while (job != NULL) {
+        display_job(job, STDOUT_FILENO);
+        job = job->next;
+    }
+    return EXIT_SUCCESS;
+}
+
+int jobs_num(unsigned int job_id) {
+	job_node *job = get_job(job_id);
+	if (!job) {
+		dprintf(STDERR_FILENO, "bash: jobs: %d : tâche inexistante\n", job_id);
+		return EXIT_FAILURE;
+	} 
+	int wstatus;
+	pid_t ret = waitpid(job->pgid, &wstatus, WNOHANG | WUNTRACED | WCONTINUED);
+	if(ret > 0) {
+		if (WIFEXITED(wstatus)) {
+			job->status = DONE;
+		} else if(WIFSTOPPED(wstatus)) {
+			job->status = STOPPED;
+		} else if(WIFSIGNALED(wstatus)) {
+			job->status = KILLED;
+		} else if(WIFCONTINUED(wstatus)) {
+			job->status = RUNNING;
+		}
+	}
+	display_job(job, STDOUT_FILENO);
+
+	if (job->status == DONE) {
+		remove_job(job->job_id);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+
+int kill_job(unsigned int job_id) {
+	return kill_job_sig(SIGTERM, job_id);
+}
+
+int kill_job_sig(int sig, unsigned int job_id) {
+	job_node *job = get_job(job_id);
+	if(job == NULL) {
+		log_info("job %d not found", job_id);
+		return EXIT_FAILURE;
+	}
+	debug("send signal %d to group %d", sig, -job->pgid);
+	if(kill(-job->pgid, sig) < 0) return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
+int kill_process(pid_t pid) {
+	return kill(pid, SIGTERM);
+}
+
+int kill_process_sig(int sig, pid_t pid) {
+	return kill(pid, sig);
 }

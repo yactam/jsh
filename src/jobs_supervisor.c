@@ -28,6 +28,7 @@ job_node *add_job(char **args) {
 			job->command[j++] = args[i][k];
 		}
 		if(args[i+1] != NULL) job->command[j++] = ' ';
+		else job->command[j] = 0;
 		i++;
 	}
 
