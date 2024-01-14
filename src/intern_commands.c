@@ -3,12 +3,17 @@
 #include "global_variables.h"
 #include "jobs_supervisor.h"
 #include "parser.h"
+#include <dirent.h>
+#include <fcntl.h>
+#include <readline/history.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#define MAX_PATH_LEN 4096
+#define MAX_STAT_LEN 4096
 
 int run_intern_command(char **input) {
     char *cmd = input[0];
@@ -33,11 +38,13 @@ int run_intern_command(char **input) {
             return EXIT_FAILURE;
         } else if (input[1] == NULL) {
             free_parse_table(input);
+            clear_history();
             jsh_exit();
         } else {
             if (input[2] == NULL) {
                 int val = atoi(input[1]);
                 free_parse_table(input);
+                clear_history();
                 jsh_exit_val(val);
             } else {
                 dprintf(STDERR_FILENO, "bash: kill: trop d'arguments\n");
@@ -49,24 +56,54 @@ int run_intern_command(char **input) {
         if (input[1] == NULL) {
             return jobs();
         } else {
-            if (input[2] == NULL) {
-                char *arg = input[1] + 1; // on élimine le %
-                int job_num = atoi(arg);
-                jobs_num(job_num);
+            if (strcmp(input[1], "-t") == 0) {
+                if (input[2] == NULL) {
+                    return job_t();
+                } else {
+                    if (input[3] == NULL) {
+                        char *arg = input[2] + 1; // on élimine le %
+                        int job_num = atoi(arg);
+                        job_t_num(job_num);
+                    } else {
+                        dprintf(STDERR_FILENO,
+                                "bash: jobs: trop d'arguments\n");
+                        return EXIT_FAILURE;
+                    }
+                }
             } else {
-                dprintf(STDERR_FILENO, "bash: kill: trop d'arguments\n");
-                return EXIT_FAILURE;
+                if (input[2] == NULL) {
+                    char *arg = input[1] + 1; // on élimine le %
+                    int job_num = atoi(arg);
+                    jobs_num(job_num);
+                } else {
+                    dprintf(STDERR_FILENO, "bash: jobs: trop d'arguments\n");
+                    return EXIT_FAILURE;
+                }
             }
         }
 
     } else if (strcmp(cmd, "bg") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
-
+        if (input[1] == NULL) {
+            return bg(jobs_supervisor->nb_jobs);
+        } else if (input[2] == NULL) {
+            char *arg = input[1] + 1;
+            int job_num = atoi(arg);
+            return bg(job_num);
+        } else {
+            dprintf(STDERR_FILENO, "bash: bg: trop d'arguments\n");
+            return EXIT_FAILURE;
+        }
     } else if (strcmp(cmd, "fg") == 0) {
-        check(write(STDOUT_FILENO, "nope\n", 5) != -1,
-              "Erreur d'écriture sur la sortie standard");
-
+        if (input[1] == NULL) {
+            return fg(jobs_supervisor->nb_jobs);
+        } else if (input[2] == NULL) {
+            char *arg = input[1] + 1;
+            int job_num = atoi(arg);
+            return fg(job_num);
+        } else {
+            dprintf(STDERR_FILENO, "bash: bg: trop d'arguments\n");
+            return EXIT_FAILURE;
+        }
     } else if (strcmp(cmd, "kill") == 0) {
         if (input[2] == NULL) {
             if (input[1][0] == '%') {     // c'est un job
@@ -77,7 +114,7 @@ int run_intern_command(char **input) {
                 pid_t pid = atoi(input[1]);
                 if (pid == 0) {
                     dprintf(STDERR_FILENO,
-                            "kill : utilisation :kill [-signal] %%job ou"
+                            "kill : utilisation :kill [-signal] %%job ou "
                             "kill [-signal] pid\n");
                     return EXIT_FAILURE;
                 } else {
@@ -176,13 +213,23 @@ int jobs() {
     int wstatus;
     pid_t pid;
 
-    while ((pid = waitpid(-1, &wstatus, WNOHANG | WUNTRACED | WCONTINUED)) >
-           0) {
-        update_job(pid, wstatus, STDOUT_FILENO);
+    job_node *job = jobs_supervisor->head;
+    int ret = get_return();
+    while (job != NULL) {
+        job_node *next = job->next;
+        while ((pid = waitpid(-job->pgid, &wstatus,
+                              WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
+            ret = update_job(job, pid, wstatus, STDOUT_FILENO);
+            set_return(ret);
+            debug("update job ended");
+        }
+        if (job->job_status == DONE || job->job_status == KILLED) {
+            remove_job(job->job_id);
+        }
+        job = next;
     }
 
-    job_node *job = jobs_supervisor->head;
-
+    job = jobs_supervisor->head;
     while (job != NULL) {
         display_job(job, STDOUT_FILENO);
         job = job->next;
@@ -200,15 +247,143 @@ int jobs_num(unsigned int job_id) {
     }
 
     int wstatus;
-    pid_t ret = waitpid(job->pgid, &wstatus, WNOHANG | WUNTRACED | WCONTINUED);
-    if (ret > 0) {
-        update_job(ret, wstatus, STDOUT_FILENO);
+    pid_t pid;
+    int ret = get_return();
+    while ((pid = waitpid(-job->pgid, &wstatus,
+                          WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
+        ret = update_job(job, pid, wstatus, STDOUT_FILENO);
+        set_return(ret);
+        debug("update job ended");
     }
-
-    if (job->status == DONE) {
+    if (job->job_status == DONE || job->job_status == KILLED) {
         remove_job(job->job_id);
     }
 
+    return EXIT_SUCCESS;
+}
+
+typedef struct {
+    pid_t pid;
+    pid_t ppid;
+    pid_t pgid;
+    char status;
+    char command[MAX_PATH_LEN];
+} ProcessInfo;
+
+int get_process_info(pid_t pid, ProcessInfo *info) {
+    char proc_path[MAX_PATH_LEN];
+    snprintf(proc_path, sizeof(proc_path), "/proc/%d/stat", pid);
+    int fd = open(proc_path, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening stat file");
+        return -1;
+    }
+    char stat_buf[MAX_STAT_LEN];
+    ssize_t read_count = read(fd, stat_buf, sizeof(stat_buf) - 1);
+    close(fd);
+
+    if (read_count == -1) {
+        perror("Error reading stat file");
+        return -1;
+    }
+
+    stat_buf[read_count] = '\0';
+
+    char **tokens = parse_line(stat_buf, ' ');
+    if (tokens == NULL)
+        return -1;
+    info->pid = atoi(tokens[0]);
+    for (size_t i = 0; i < strlen(tokens[1]); ++i) {
+        info->command[i] = stat_buf[i];
+    }
+    info->status = tokens[2][0];
+    info->ppid = atoi(tokens[3]);
+    info->pgid = atoi(tokens[4]);
+
+    return 0;
+}
+
+void display_process_tree(pid_t leader) {
+    ProcessInfo leader_info;
+    ProcessInfo current_info;
+    if (get_process_info(leader, &leader_info) == 0) {
+        char str_status[512];
+        switch (current_info.status) {
+        case 'T':
+            strcpy(str_status, "STOPPED");
+            break;
+        case 'R':
+            strcpy(str_status, "RUNNING");
+            break;
+        default:
+            strcpy(str_status, "UNKNOWN");
+            break;
+        }
+        printf("\t| %d %s %s\n", leader_info.pid, str_status,
+               leader_info.command);
+    }
+
+    DIR *proc_dir = opendir("/proc");
+    if (!proc_dir) {
+        perror("Error opening /proc directory");
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(proc_dir)) != NULL) {
+        if (entry->d_type == DT_DIR) {
+            pid_t pid = atoi(entry->d_name);
+
+            if (pid > 0) {
+                if (get_process_info(pid, &current_info) == 0 &&
+                    current_info.pgid == leader && current_info.pid != leader) {
+                    char str_status[512];
+                    switch (current_info.status) {
+                    case 'T':
+                        strcpy(str_status, "STOPPED");
+                        break;
+                    case 'R':
+                        strcpy(str_status, "RUNNING");
+                        break;
+                    default:
+                        strcpy(str_status, "UNKNOWN");
+                        break;
+                    }
+                    printf("\t%d %s %s\n", current_info.pid, str_status,
+                           current_info.command);
+                }
+            }
+        }
+    }
+    closedir(proc_dir);
+}
+
+int job_t() {
+    job_node *job = jobs_supervisor->head;
+    while (job != NULL) {
+        job_t_num(job->job_id);
+        job = job->next;
+    }
+    return EXIT_SUCCESS;
+}
+
+int job_t_num(unsigned job_id) {
+    job_node *job = get_job(job_id);
+    if (!job) {
+        return EXIT_FAILURE;
+    }
+    int wstatus;
+    pid_t pid;
+    int ret = get_return();
+    while ((pid = waitpid(-job->pgid, &wstatus,
+                          WNOHANG | WUNTRACED | WCONTINUED)) > 0) {
+        ret = update_job(job, pid, wstatus, STDERR_FILENO);
+        set_return(ret);
+    }
+
+    pid_t leader = job->pgid;
+    display_job(job, STDOUT_FILENO);
+    display_process_tree(leader);
     return EXIT_SUCCESS;
 }
 
@@ -236,4 +411,51 @@ int kill_process(pid_t pid) {
 
 int kill_process_sig(int sig, pid_t pid) {
     return kill(pid, sig);
+}
+
+int bg(unsigned job_id) {
+    job_node *job = get_job(job_id);
+    if (job == NULL) {
+        log_info("job %d not found", job_id);
+        return EXIT_FAILURE;
+    }
+    if (kill(-job->pgid, SIGCONT) < 0) {
+        return EXIT_FAILURE;
+    }
+    job->mode = BACKGROUND;
+    return EXIT_SUCCESS;
+}
+
+int fg(unsigned job_id) {
+    job_node *job = get_job(job_id);
+    if (job == NULL) {
+        log_info("job %d not found", job_id);
+        return EXIT_FAILURE;
+    }
+
+    if (kill(-job->pgid, SIGCONT) < 0) {
+        return EXIT_FAILURE;
+    }
+    job->mode = FOREGROUND;
+    job->job_status = RUNNING;
+    tcsetpgrp(STDIN_FILENO, job->pgid);
+    tcsetpgrp(STDOUT_FILENO, job->pgid);
+    tcsetpgrp(STDERR_FILENO, job->pgid);
+    int wstatus, ret = get_return();
+    int fd = open("/dev/null", O_WRONLY);
+    pid_t pid;
+    while ((pid = waitpid(-job->pgid, &wstatus, WUNTRACED | WCONTINUED)) > 0) {
+        ret = update_job(job, pid, wstatus, fd);
+        set_return(ret);
+        if (job->job_status == STOPPED) {
+            display_job(job, STDERR_FILENO);
+            break;
+        }
+    }
+    tcsetpgrp(STDIN_FILENO, getpgrp());
+    tcsetpgrp(STDOUT_FILENO, getpgrp());
+    tcsetpgrp(STDERR_FILENO, getpgrp());
+
+    close(fd);
+    return EXIT_SUCCESS;
 }

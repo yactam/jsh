@@ -4,7 +4,10 @@
 #include "intern_commands.h"
 #include "jobs_supervisor.h"
 #include "parser.h"
+#include "pipeline.h"
+#include "process_substitution.h"
 #include "redirections.h"
+#include "signal.h"
 #include <fcntl.h>
 #include <readline/history.h>
 #include <readline/readline.h>
@@ -79,10 +82,11 @@ int run_command(char **input) {
         ret = run_redirection(input);
         break;
     case PIPE:
-        ret = 0; // run_pipe(input);
+        debug("pipe command to execute");
+        ret = run_pipe(input);
         break;
     case PROCESSUS_SUBSTITUTION:
-        ret = 0; // run_process_substitution(input);
+        ret = run_process_substitution(input);
         break;
     }
 
@@ -94,7 +98,7 @@ int start() {
     setenv("OLDPWD", "", 1);
     rl_outstream = stderr;
     init_jobs_supervisor();
-
+    ignore_signals();
     while (1) {
         check_jobs();
 
@@ -106,22 +110,23 @@ int start() {
         free(prompt);
 
         if (line == NULL) {
+            clear_history();
             jsh_exit_val(get_return());
-        }
-
-        debug("line read: %s", line);
-
-        if (strcmp(line, "") != 0) {
-            add_history(line);
-            char **input = parse_line(line, ' ');
-            debug("line parsed");
-
-            int ret = run_command(input);
-            debug("the last command returned: %d", ret);
-            set_return(ret);
-
-            free(line);
-            free_parse_table(input);
+        } else {
+            debug("line read: %s", line);
+            if (strcmp(line, "") != 0) {
+                add_history(line);
+                char **input = parse_line(line, ' ');
+                free(line);
+                debug("line parsed");
+                int ret = run_command(input);
+                debug("the last command returned: %d", ret);
+                set_return(ret);
+                if (input)
+                    free_parse_table(input);
+            } else {
+                free(line);
+            }
         }
     }
 
