@@ -1,7 +1,9 @@
 #include "extern_commands.h"
 #include "debug.h"
 #include "global_variables.h"
+#include "jobs_supervisor.h"
 #include "parser.h"
+#include "signal.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -10,40 +12,38 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-int run_extern_command(char **tokens) {
-    size_t l = size_parse_table(tokens);
-    lunch_mode mode = FOREGROUND;
+int run_extern_command(char **args) {
+    job_node *job = add_job(args);
 
-    if (strcmp(tokens[l - 1], "&") == 0) {
-        mode = BACKGROUND;
-        free(tokens[l - 1]);
-        tokens[l - 1] = NULL;
-    }
-
-    return exec(tokens[0], tokens, mode);
-}
-
-int exec(char *cmd, char **args, lunch_mode mode) {
     int pid = fork();
     if (pid == -1) {
         log_error("Erreur fork");
+        return EXIT_FAILURE;
     } else if (pid == 0) {
-        setpgid(0, 0);
-        execvp(cmd, args);
-        dprintf(STDERR_FILENO, "bash: %s: commande inconnue\n", cmd);
+        reset_signals();
+        execvp(args[0], args);
+        dprintf(STDERR_FILENO, "bash: %s: commande inconnue\n", args[0]);
         exit(EXIT_FAILURE);
     } else {
-        job_node *job = add_job(args);
-        job->mode = mode;
-        job->pgid = pid;
-
-        if (mode == FOREGROUND) {
+        if (job->pgid == 0) {
+            job->pgid = pid; // initialiser le leader pour le job
+            if (job->mode == FOREGROUND) {
+                tcsetpgrp(STDIN_FILENO, pid);
+                tcsetpgrp(STDOUT_FILENO, pid);
+                tcsetpgrp(STDERR_FILENO, pid);
+            }
+        }
+        setpgid(pid, job->pgid); // ajouter chaque fils au meme groupe
+        add_process(job, pid);
+        if (job->mode == FOREGROUND) {
             int wstatus = 0;
             int ret = waitpid(pid, &wstatus, WUNTRACED | WCONTINUED);
+            tcsetpgrp(STDIN_FILENO, getpgrp());
+            tcsetpgrp(STDOUT_FILENO, getpgrp());
+            tcsetpgrp(STDERR_FILENO, getpgrp());
             if (ret > 0) {
-                int fd = open("/dev/null", O_WRONLY);
-                int r = update_job(ret, wstatus, STDERR_FILENO);
-                close(fd);
+                debug("command %s ended", args[0]);
+                int r = update_job(job, ret, wstatus, STDERR_FILENO);
                 return r;
             }
         } else {

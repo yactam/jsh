@@ -18,7 +18,7 @@ size_t nb_words(char *line, char sep) {
         if (space == NULL) {
             return ++res;
         }
-        debug("first occurrence of separator = '%s'\n", space);
+        debug("first occurrence of separator = '%s'", space);
         cursor = space;
         res++;
         while (*cursor == sep) {
@@ -123,17 +123,37 @@ command_type get_command_type(char **tokens) {
 
     int i = 0;
     while (tokens[i] != NULL) {
+        if (strcmp(tokens[i], "<(") == 0) {
+            int j = i;
+            int is_in_substitution = 1;
+            while (tokens[j] != NULL) {
+                if (strcmp(tokens[j], ")") == 0) {
+                    is_in_substitution = 0;
+                } else if (strcmp(tokens[j], "|") == 0 && !is_in_substitution) {
+                    return PIPE;
+                }
+                j++;
+            }
+            return PROCESSUS_SUBSTITUTION;
+        }
+
+        i++;
+    }
+
+    i = 0;
+    while (tokens[i] != NULL) {
         if (strcmp(tokens[i], "|") == 0)
             return PIPE;
+        i++;
+    }
+
+    i = 0;
+    while (tokens[i] != NULL) {
         if (strcmp(tokens[i], "<") == 0 || strcmp(tokens[i], ">") == 0 ||
             strcmp(tokens[i], ">|") == 0 || strcmp(tokens[i], ">>") == 0 ||
             strcmp(tokens[i], "2>") == 0 || strcmp(tokens[i], "2>|") == 0 ||
             strcmp(tokens[i], "2>>") == 0)
             return IO_REDIRECTION;
-        char *start = strstr(tokens[i], "<(");
-        char *end = strstr(tokens[i], ")");
-        if (start != NULL && end != NULL && start < end)
-            return PROCESSUS_SUBSTITUTION;
         i++;
     }
 
