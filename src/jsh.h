@@ -11,6 +11,7 @@
 #define JOBS_MAXSIZE 10
 
 #include "global_variables.h"
+#include "jobs_supervisor.h"
 #include <stdlib.h>
 
 int start();
